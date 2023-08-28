@@ -127,6 +127,7 @@ export default function App() {
 
   return (
     <div className="App">
+      <h1>Gerador de Cartas</h1>
       <div
         style={{
           display: "flex",
@@ -153,7 +154,9 @@ export default function App() {
           Salvar
         </Button>
       </div>
-      <div style={{ display: "flex", gap: "10px", padding: "1em" }}>
+      <div
+        style={{ width: "100%", display: "flex", gap: "10px", padding: "1em" }}
+      >
         <span style={{ fontWeight: "bold" }}>Salvos:</span>
         {Object.keys(savedCards ?? {}).map((key) => (
           <SaveCard key={key} onClick={() => setCards(savedCards?.[key])}>

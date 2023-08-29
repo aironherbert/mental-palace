@@ -35,7 +35,6 @@ const Card = styled.div`
   box-shadow: 0px 0px 5px 0px rgba(0, 0, 0, 0.75);
 
   &:hover {
-    cursor: pointer;
     transform: scale(1.1);
 
     transition: transform 0.2s ease-in-out;
@@ -121,15 +120,12 @@ export default function App() {
     setCards(selectedCards);
   }, []);
 
+  const syncData = useCallback(() => {
+    setSavedCards(JSON.parse(localStorage.getItem("saved-cards") ?? "{}"));
+  }, []);
+
   const save = useCallback(() => {
     const date = new Date().toLocaleString() ?? "no-date";
-    setSavedCards((prev) => {
-      return {
-        ...prev,
-        [date]: cards ?? [],
-      };
-    });
-
     localStorage.setItem(
       "saved-cards",
       JSON.stringify({
@@ -137,30 +133,28 @@ export default function App() {
         [date]: cards ?? [],
       })
     );
-  }, [cards, savedCards]);
+    syncData();
+  }, [cards, savedCards, syncData]);
 
   const remove = useCallback(
     (key: string) => {
-      setSavedCards((prev) => {
-        const newSavedCards = { ...prev };
-        delete newSavedCards[key];
-        return newSavedCards;
-      });
+      const newSavedCards = { ...savedCards };
+      delete newSavedCards[key];
 
       localStorage.setItem(
         "saved-cards",
         JSON.stringify({
-          ...savedCards,
-          [key]: cards ?? [],
+          ...newSavedCards,
         })
       );
+      syncData();
     },
-    [cards, savedCards]
+    [savedCards, syncData]
   );
 
   return (
     <div className="App">
-      <h1>Gerador de Cartas</h1>
+      <h1>Memorizador Cartas</h1>
       <div
         style={{
           display: "flex",
@@ -194,8 +188,7 @@ export default function App() {
         {Object.keys(savedCards ?? {}).map((key) => (
           <SaveCard
             key={key}
-            onClick={(e) => {
-              e.stopPropagation();
+            onClick={() => {
               setCards(savedCards?.[key]);
             }}
           >

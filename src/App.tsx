@@ -45,7 +45,7 @@ const Card = styled.div`
   }
 `;
 
-const SaveCard = styled.div`
+const SaveCard = styled.div<{ active: boolean }>`
   width: 100px;
   height: 50px;
   border: 1px solid black;
@@ -58,7 +58,7 @@ const SaveCard = styled.div`
   text-align: center;
   position: relative;
 
-  background-color: white;
+  background-color: ${({ active }) => (active ? "#4c7cff" : "white")};
   box-shadow: 0px 0px 5px 0px rgba(0, 0, 0, 0.75);
 
   &:hover {
@@ -100,21 +100,19 @@ interface CardType {
   nipe: string;
   value: string;
 }
-
+type T = Record<string, CardType[]>;
 export default function App() {
   const [cards, setCards] = useState<CardType[]>();
-  const [savedCards, setSavedCards] = usePersistentState(
-    "saved-cards",
-    {} as { [key: string]: CardType[] }
-  );
+  const [savedCards, setSavedCards] = usePersistentState<T>("saved-cards", {});
 
   const [code, setCode] = useState<string>("no-date");
+  const [show, setShow] = useState<boolean>(false);
 
   const save = useCallback(
     (cards?: CardType[]) => {
       const date = new Date().toLocaleString() ?? "no-date";
       setCode(date);
-      setSavedCards((prev: { [key: string]: CardType[] }) => {
+      setSavedCards((prev: T) => {
         return {
           ...prev,
           [date]: cards ?? [],
@@ -150,13 +148,15 @@ export default function App() {
 
   return (
     <div className="App">
-      <h1>Gerador de cartas aleatórias</h1>
+      <h1 style={{ margin: 0 }}>Gerador de Cartas</h1>
+      <h4>Jogo de memorizar cartas</h4>
       <div style={{ display: "flex", width: "100%" }}>
         <div
           style={{
             display: "flex",
             flexDirection: "column",
             width: "100%",
+            alignItems: "center",
           }}
         >
           <div
@@ -176,8 +176,13 @@ export default function App() {
             >
               Gerar
             </Button>
+            {!show && (
+              <Button variant="contained" color="secondary">
+                Tentar
+              </Button>
+            )}
           </div>
-          <Stopwatch code={code} />
+          <Stopwatch code={code} setShow={setShow} />
           <div
             style={{
               width: "100%",
@@ -191,6 +196,7 @@ export default function App() {
             {Object.keys(savedCards ?? {}).map((key) => (
               <SaveCard
                 key={key}
+                active={key === code}
                 onClick={() => {
                   setCards(savedCards?.[key]);
                   setCode(key);
@@ -214,7 +220,20 @@ export default function App() {
         style={{ display: "flex", flexWrap: "wrap", justifyContent: "center" }}
       >
         {cards?.map((card) => (
-          <GenerateCard nipe={card.nipe} value={card.value} />
+          <>
+            {show && (
+              <GenerateCard
+                key={`${card.value}_${card.nipe}`}
+                nipe={card.nipe}
+                value={card.value}
+              />
+            )}
+            {!show && (
+              <Card key={`${card.value}_${card.nipe}`}>
+                <h1>?</h1>
+              </Card>
+            )}
+          </>
         ))}
       </div>
     </div>

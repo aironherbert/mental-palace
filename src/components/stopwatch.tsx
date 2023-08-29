@@ -1,18 +1,8 @@
 import styled from "@emotion/styled";
-import { Card, Icon, IconButton, List, ListItem } from "@mui/material";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Card, Icon, IconButton } from "@mui/material";
+import { useEffect, useRef, useState } from "react";
 import usePersistentState from "../helpers/use-persistent-state";
 
-const TimeList = styled.div`
-  display: flex;
-  flex-direction: row;
-  justify-content: center;
-  align-items: center;
-  flex: 2;
-  max-height: 300px;
-  overflow-y: auto;
-  padding: 10px;
-`;
 const Display = styled.div`
   display: flex;
   flex-direction: row;
@@ -35,55 +25,56 @@ const Container = styled.div`
   }
 `;
 
-type TimeType = {
+type Time = {
   minutes: string;
   seconds: string;
-  date: string;
 };
+
 interface Proptypes {
   code: string;
+  setShow: (show: boolean) => void;
 }
-export default function Stopwatch({ code }: Proptypes) {
-  const [minutes, setMinutes] = useState("00");
-  const [seconds, setSeconds] = useState("00");
+
+export default function Stopwatch({ code, setShow }: Proptypes) {
+  const [dataTime, setDataTime] = usePersistentState<Record<string, Time>>(
+    code,
+    {}
+  );
+  const [time, setTime] = useState<Time>(
+    () => dataTime[code] ?? { minutes: "00", seconds: "00" }
+  );
   const [play, setPlay] = useState(false);
   const timer = useRef<NodeJS.Timeout>();
 
-  const [timeList, setTimeList] = usePersistentState(
-    "time-list",
-    {} as { [key: string]: TimeType[] }
-  );
-
   useEffect(() => {
-    const times = timeList[code];
-    if (times) {
-      const lastTime = times[times.length - 1];
-      if (lastTime) {
-        setMinutes(lastTime.minutes);
-        setSeconds(lastTime.seconds);
-      }
-    } else {
-      setMinutes("00");
-      setSeconds("00");
-    }
-  }, [code, timeList]);
+    setTime(() => dataTime[code] ?? { minutes: "00", seconds: "00" });
+    setPlay(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [code]);
 
   useEffect(() => {
     if (play) {
       timer.current = setInterval(() => {
-        setSeconds((prev) => {
-          if (prev === "59") {
-            setMinutes((prev) => {
-              if (prev === "59") {
-                return "00";
-              } else {
-                return String(parseInt(prev, 10) + 1).padStart(2, "0");
-              }
-            });
-            return "00";
-          } else {
-            return String(parseInt(prev, 10) + 1).padStart(2, "0");
+        setTime((prev: Time) => {
+          const minutes = prev.minutes ?? "00";
+          const seconds = prev.seconds ?? "00";
+          if (seconds === "59") {
+            if (minutes === "59") {
+              return {
+                minutes: "00",
+                seconds: "00",
+              };
+            } else {
+              return {
+                minutes: String(parseInt(minutes, 1) + 1).padStart(2, "0"),
+                seconds: "00",
+              };
+            }
           }
+          return {
+            minutes: minutes,
+            seconds: String(parseInt(seconds, 10) + 1).padStart(2, "0"),
+          };
         });
       }, 1000);
     }
@@ -92,81 +83,47 @@ export default function Stopwatch({ code }: Proptypes) {
         clearInterval(timer.current);
       }
     };
-  }, [play]);
+  }, [play, setTime]);
 
-  const reset = useCallback(() => {
-    setPlay(false);
-    setMinutes("00");
-    setSeconds("00");
-  }, []);
+  useEffect(() => {
+    setShow(play);
+  }, [play, setShow]);
 
-  const add = useCallback(() => {
-    if (timeList[code]) {
-      setTimeList((prev: { [key: string]: TimeType[] }) => ({
+  useEffect(() => {
+    setDataTime((prev) => {
+      return {
         ...prev,
-        [code]: [
-          ...prev[code],
-          { minutes, seconds, date: new Date().toLocaleString() },
-        ],
-      }));
-    } else {
-      setTimeList((prev: { [key: string]: TimeType[] }) => ({
-        ...prev,
-        [code]: [{ minutes, seconds, date: new Date().toLocaleString() }],
-      }));
-    }
-    setPlay(false);
-  }, [code, minutes, seconds, setTimeList, timeList]);
-
-  const remove = useCallback(
-    (index: number) => {
-      setTimeList((prev: { [key: string]: TimeType[] }) => ({
-        ...prev,
-        [code]: prev[code].filter((_, i) => i !== index),
-      }));
-    },
-    [code, setTimeList]
-  );
+        [code]: time,
+      };
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [time]);
 
   return (
     <Card style={{ alignSelf: "end" }}>
       <Container>
-        <TimeList>
-          <List
-            sx={{
-              width: "100%",
-              bgcolor: "background.paper",
-              position: "relative",
-              overflowY: "auto",
-              overflowX: "hidden",
-              maxHeight: 150,
-            }}
-          >
-            {timeList[code]?.map((time: TimeType, index: number) => (
-              <ListItem sx={{ margin: 0, padding: 0, whiteSpace: "nowrap" }}>
-                {index + 1} - {time.minutes}:{time.seconds} ({time.date})
-                <IconButton onClick={() => remove(index)}>
-                  <Icon style={{ color: "red" }}>remove_circle</Icon>
-                </IconButton>
-              </ListItem>
-            ))}
-          </List>
-        </TimeList>
         <div style={{ display: "flex", flexDirection: "column" }}>
           <Display>
-            <h1>{minutes}</h1>
+            <h1>{time.minutes}</h1>
             <h1>:</h1>
-            <h1>{seconds}</h1>
+            <h1>{time.seconds}</h1>
           </Display>
           <div style={{ display: "flex", justifyContent: "end" }}>
-            <IconButton onClick={() => setPlay((prev) => !prev)}>
-              {play ? <Icon>pause_circle</Icon> : <Icon>play_circle</Icon>}
-            </IconButton>
-            <IconButton onClick={() => reset()}>
-              <Icon>stop_circle</Icon>
-            </IconButton>
-            <IconButton onClick={() => add()}>
-              <Icon>add_circle</Icon>
+            <IconButton
+              style={{ gap: "10px" }}
+              onClick={() => setPlay((prev) => !prev)}
+            >
+              {play ? (
+                <>
+                  Pausar
+                  <Icon style={{ color: "blueviolet" }}>pause_circle</Icon>
+                </>
+              ) : (
+                <>
+                  Ver cartas
+                  <Icon style={{ color: "blue" }}>play_circle</Icon>
+                </>
+              )}
             </IconButton>
           </div>
         </div>

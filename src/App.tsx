@@ -108,9 +108,12 @@ export default function App() {
     {} as { [key: string]: CardType[] }
   );
 
+  const [code, setCode] = useState<string>("no-date");
+
   const save = useCallback(
     (cards?: CardType[]) => {
       const date = new Date().toLocaleString() ?? "no-date";
+      setCode(date);
       setSavedCards((prev: { [key: string]: CardType[] }) => {
         return {
           ...prev,
@@ -162,6 +165,8 @@ export default function App() {
               gap: "10px",
               justifyContent: "center",
               padding: "1em",
+              alignItems: "start",
+              flexWrap: "wrap",
             }}
           >
             <Button
@@ -171,21 +176,8 @@ export default function App() {
             >
               Gerar
             </Button>
-            {/* <Button
-          variant="contained"
-          color="secondary"
-          onClick={() => {
-            setCards([]);
-            localStorage.removeItem("saved-cards");
-            setSavedCards({});
-          }}
-        >
-          Limpar
-        </Button> */}
-            {/* <Button variant="contained" color="warning" onClick={() => save()}>
-          Salvar
-        </Button> */}
           </div>
+          <Stopwatch code={code} />
           <div
             style={{
               width: "100%",
@@ -201,6 +193,7 @@ export default function App() {
                 key={key}
                 onClick={() => {
                   setCards(savedCards?.[key]);
+                  setCode(key);
                 }}
               >
                 <IconButton
@@ -215,9 +208,6 @@ export default function App() {
               </SaveCard>
             ))}
           </div>
-        </div>
-        <div style={{ flex: 1 }}>
-          <Stopwatch />
         </div>
       </div>
       <div

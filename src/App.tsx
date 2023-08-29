@@ -1,7 +1,9 @@
 import styled from "@emotion/styled";
 import { Button, Icon, IconButton } from "@mui/material";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import "./App.css";
+import Stopwatch from "./components/stopwatch";
+import usePersistentState from "./helpers/use-persistent-state";
 const NIPES = ["diamonds", "clubs", "hearts", "spades"];
 const VALUES = [
   "2",
@@ -82,7 +84,7 @@ const SaveCard = styled.div`
   }
 `;
 
-function GenerateCard({ nipe, value }: { nipe: string; value: string }) {
+function GenerateCard({ nipe, value }: CardType) {
   return (
     <Card>
       <h1>{value}</h1>
@@ -94,40 +96,33 @@ function GenerateCard({ nipe, value }: { nipe: string; value: string }) {
   );
 }
 
+interface CardType {
+  nipe: string;
+  value: string;
+}
+
 export default function App() {
-  const [cards, setCards] = useState<{ nipe: string; value: string }[]>();
-  const [savedCards, setSavedCards] =
-    useState<Record<string, { nipe: string; value: string }[]>>();
-
-  const syncData = useCallback(() => {
-    setSavedCards(JSON.parse(localStorage.getItem("saved-cards") ?? "{}"));
-  }, []);
-
-  useEffect(() => {
-    const savedCards = localStorage.getItem("saved-cards");
-    if (savedCards) {
-      setSavedCards(JSON.parse(savedCards));
-    }
-  }, []);
+  const [cards, setCards] = useState<CardType[]>();
+  const [savedCards, setSavedCards] = usePersistentState(
+    "saved-cards",
+    {} as { [key: string]: CardType[] }
+  );
 
   const save = useCallback(
-    (cards?: { nipe: string; value: string }[]) => {
+    (cards?: CardType[]) => {
       const date = new Date().toLocaleString() ?? "no-date";
-      const previous = JSON.parse(localStorage.getItem("saved-cards") ?? "{}");
-      localStorage.setItem(
-        "saved-cards",
-        JSON.stringify({
-          ...previous,
+      setSavedCards((prev: { [key: string]: CardType[] }) => {
+        return {
+          ...prev,
           [date]: cards ?? [],
-        })
-      );
-      syncData();
+        };
+      });
     },
-    [syncData]
+    [setSavedCards]
   );
 
   const generate = useCallback(() => {
-    const cards = new Set<{ nipe: string; value: string }>();
+    const cards = new Set<CardType>();
     for (let i = 0; i < 4; i++) {
       for (let j = 0; j < 13; j++) {
         cards.add({ nipe: NIPES[i], value: VALUES[j] });
@@ -145,33 +140,38 @@ export default function App() {
     (key: string) => {
       const newSavedCards = { ...savedCards };
       delete newSavedCards[key];
-
-      localStorage.setItem(
-        "saved-cards",
-        JSON.stringify({
-          ...newSavedCards,
-        })
-      );
-      syncData();
+      setSavedCards(newSavedCards);
     },
-    [savedCards, syncData]
+    [savedCards, setSavedCards]
   );
 
   return (
     <div className="App">
-      <h1>Gerador de cartas</h1>
-      <div
-        style={{
-          display: "flex",
-          gap: "10px",
-          justifyContent: "center",
-          padding: "1em",
-        }}
-      >
-        <Button variant="contained" color="primary" onClick={() => generate()}>
-          Gerar aleatório
-        </Button>
-        {/* <Button
+      <h1>Gerador de cartas aleatórias</h1>
+      <div style={{ display: "flex", width: "100%" }}>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            width: "100%",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              gap: "10px",
+              justifyContent: "center",
+              padding: "1em",
+            }}
+          >
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={() => generate()}
+            >
+              Gerar
+            </Button>
+            {/* <Button
           variant="contained"
           color="secondary"
           onClick={() => {
@@ -182,38 +182,43 @@ export default function App() {
         >
           Limpar
         </Button> */}
-        {/* <Button variant="contained" color="warning" onClick={() => save()}>
+            {/* <Button variant="contained" color="warning" onClick={() => save()}>
           Salvar
         </Button> */}
-      </div>
-      <div
-        style={{
-          width: "100%",
-          display: "flex",
-          gap: "10px",
-          padding: "1em",
-          flexWrap: "wrap",
-        }}
-      >
-        <span style={{ fontWeight: "bold" }}>Salvos:</span>
-        {Object.keys(savedCards ?? {}).map((key) => (
-          <SaveCard
-            key={key}
-            onClick={() => {
-              setCards(savedCards?.[key]);
+          </div>
+          <div
+            style={{
+              width: "100%",
+              display: "flex",
+              gap: "5px",
+              padding: "1em",
+              flexWrap: "wrap",
             }}
           >
-            <IconButton
-              className={"remove-button"}
-              onClick={() => {
-                remove(key);
-              }}
-            >
-              <Icon>remove_circle</Icon>
-            </IconButton>
-            {key}
-          </SaveCard>
-        ))}
+            <span style={{ fontWeight: "bold" }}>Sequências salvas:</span>
+            {Object.keys(savedCards ?? {}).map((key) => (
+              <SaveCard
+                key={key}
+                onClick={() => {
+                  setCards(savedCards?.[key]);
+                }}
+              >
+                <IconButton
+                  className={"remove-button"}
+                  onClick={() => {
+                    remove(key);
+                  }}
+                >
+                  <Icon>remove_circle</Icon>
+                </IconButton>
+                {key}
+              </SaveCard>
+            ))}
+          </div>
+        </div>
+        <div style={{ flex: 1 }}>
+          <Stopwatch />
+        </div>
       </div>
       <div
         style={{ display: "flex", flexWrap: "wrap", justifyContent: "center" }}

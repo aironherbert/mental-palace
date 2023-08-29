@@ -1,5 +1,5 @@
 import styled from "@emotion/styled";
-import { Button } from "@mui/material";
+import { Button, Icon, IconButton } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
 import "./App.css";
 const NIPES = ["diamonds", "clubs", "hearts", "spades"];
@@ -55,6 +55,7 @@ const SaveCard = styled.div`
   justify-content: center;
   align-items: center;
   text-align: center;
+  position: relative;
 
   background-color: white;
   box-shadow: 0px 0px 5px 0px rgba(0, 0, 0, 0.75);
@@ -66,6 +67,19 @@ const SaveCard = styled.div`
     transition: transform 0.2s ease-in-out;
 
     box-shadow: 0px 0px 5px 0px rgba(0, 0, 0, 0.75);
+
+    .remove-button {
+      display: block;
+    }
+  }
+
+  .remove-button {
+    position: absolute;
+    display: none;
+    top: -25px;
+    right: -25px;
+
+    color: red;
   }
 `;
 
@@ -125,6 +139,25 @@ export default function App() {
     );
   }, [cards, savedCards]);
 
+  const remove = useCallback(
+    (key: string) => {
+      setSavedCards((prev) => {
+        const newSavedCards = { ...prev };
+        delete newSavedCards[key];
+        return newSavedCards;
+      });
+
+      localStorage.setItem(
+        "saved-cards",
+        JSON.stringify({
+          ...savedCards,
+          [key]: cards ?? [],
+        })
+      );
+    },
+    [cards, savedCards]
+  );
+
   return (
     <div className="App">
       <h1>Gerador de Cartas</h1>
@@ -159,7 +192,16 @@ export default function App() {
       >
         <span style={{ fontWeight: "bold" }}>Salvos:</span>
         {Object.keys(savedCards ?? {}).map((key) => (
-          <SaveCard key={key} onClick={() => setCards(savedCards?.[key])}>
+          <SaveCard
+            key={key}
+            onClick={(e) => {
+              e.stopPropagation();
+              setCards(savedCards?.[key]);
+            }}
+          >
+            <IconButton className={"remove-button"} onClick={() => remove(key)}>
+              <Icon>remove_circle</Icon>
+            </IconButton>
             {key}
           </SaveCard>
         ))}

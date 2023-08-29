@@ -99,12 +99,32 @@ export default function App() {
   const [savedCards, setSavedCards] =
     useState<Record<string, { nipe: string; value: string }[]>>();
 
+  const syncData = useCallback(() => {
+    setSavedCards(JSON.parse(localStorage.getItem("saved-cards") ?? "{}"));
+  }, []);
+
   useEffect(() => {
     const savedCards = localStorage.getItem("saved-cards");
     if (savedCards) {
       setSavedCards(JSON.parse(savedCards));
     }
   }, []);
+
+  const save = useCallback(
+    (cards?: { nipe: string; value: string }[]) => {
+      const date = new Date().toLocaleString() ?? "no-date";
+      const previous = JSON.parse(localStorage.getItem("saved-cards") ?? "{}");
+      localStorage.setItem(
+        "saved-cards",
+        JSON.stringify({
+          ...previous,
+          [date]: cards ?? [],
+        })
+      );
+      syncData();
+    },
+    [syncData]
+  );
 
   const generate = useCallback(() => {
     const cards = new Set<{ nipe: string; value: string }>();
@@ -118,23 +138,8 @@ export default function App() {
     const selectedCards = shuffledCards.slice(0, 52);
 
     setCards(selectedCards);
-  }, []);
-
-  const syncData = useCallback(() => {
-    setSavedCards(JSON.parse(localStorage.getItem("saved-cards") ?? "{}"));
-  }, []);
-
-  const save = useCallback(() => {
-    const date = new Date().toLocaleString() ?? "no-date";
-    localStorage.setItem(
-      "saved-cards",
-      JSON.stringify({
-        ...savedCards,
-        [date]: cards ?? [],
-      })
-    );
-    syncData();
-  }, [cards, savedCards, syncData]);
+    save(selectedCards);
+  }, [save]);
 
   const remove = useCallback(
     (key: string) => {
@@ -154,7 +159,7 @@ export default function App() {
 
   return (
     <div className="App">
-      <h1>Memorizador Cartas</h1>
+      <h1>Gerador de cartas</h1>
       <div
         style={{
           display: "flex",
@@ -177,12 +182,18 @@ export default function App() {
         >
           Limpar
         </Button> */}
-        <Button variant="contained" color="warning" onClick={() => save()}>
+        {/* <Button variant="contained" color="warning" onClick={() => save()}>
           Salvar
-        </Button>
+        </Button> */}
       </div>
       <div
-        style={{ width: "100%", display: "flex", gap: "10px", padding: "1em" }}
+        style={{
+          width: "100%",
+          display: "flex",
+          gap: "10px",
+          padding: "1em",
+          flexWrap: "wrap",
+        }}
       >
         <span style={{ fontWeight: "bold" }}>Salvos:</span>
         {Object.keys(savedCards ?? {}).map((key) => (
@@ -192,7 +203,12 @@ export default function App() {
               setCards(savedCards?.[key]);
             }}
           >
-            <IconButton className={"remove-button"} onClick={() => remove(key)}>
+            <IconButton
+              className={"remove-button"}
+              onClick={() => {
+                remove(key);
+              }}
+            >
               <Icon>remove_circle</Icon>
             </IconButton>
             {key}

@@ -110,7 +110,7 @@ function GenerateCard({
 
   if (show) {
     return (
-      <div onClick={() => getTips()}>
+      <div onClick={() => (tips.length === 0 ? getTips() : setTips([]))}>
         <Card>
           <h1>{value}</h1>
           {tips.length > 0 && (

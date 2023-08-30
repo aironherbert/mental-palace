@@ -40,9 +40,7 @@ export default function Stopwatch({ code, setShow }: Proptypes) {
     code,
     {}
   );
-  const [time, setTime] = useState<Time>(
-    () => dataTime[code] ?? { minutes: "00", seconds: "00" }
-  );
+  const [time, setTime] = useState<Time>({ minutes: "59", seconds: "00" });
   const [play, setPlay] = useState(false);
   const timer = useRef<NodeJS.Timeout>();
 
@@ -59,17 +57,10 @@ export default function Stopwatch({ code, setShow }: Proptypes) {
           const minutes = prev.minutes ?? "00";
           const seconds = prev.seconds ?? "00";
           if (seconds === "59") {
-            if (minutes === "59") {
-              return {
-                minutes: "00",
-                seconds: "00",
-              };
-            } else {
-              return {
-                minutes: String(parseInt(minutes, 1) + 1).padStart(2, "0"),
-                seconds: "00",
-              };
-            }
+            return {
+              minutes: String(parseInt(minutes, 10) + 1).padStart(2, "0"),
+              seconds: "00",
+            };
           }
           return {
             minutes: minutes,

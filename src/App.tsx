@@ -148,8 +148,8 @@ export default function App() {
 
   return (
     <div className="App">
-      <h1 style={{ margin: 0 }}>Gerador de Cartas</h1>
-      <h4>Jogo de memorizar cartas</h4>
+      <h1 style={{ margin: 0 }}>Gerador de Cartas Aleatórias</h1>
+      <h4>Jogo de memória</h4>
       <div style={{ display: "flex", width: "100%" }}>
         <div
           style={{
@@ -184,6 +184,11 @@ export default function App() {
           </div>
           <Stopwatch code={code} setShow={setShow} />
           <div
+            style={{ display: "flex", justifyContent: "start", width: "100%" }}
+          >
+            <div style={{ fontWeight: "bold" }}>Sequências salvas:</div>
+          </div>
+          <div
             style={{
               width: "100%",
               display: "flex",
@@ -192,7 +197,6 @@ export default function App() {
               flexWrap: "wrap",
             }}
           >
-            <span style={{ fontWeight: "bold" }}>Sequências salvas:</span>
             {Object.keys(savedCards ?? {}).map((key) => (
               <SaveCard
                 key={key}

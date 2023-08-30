@@ -62,12 +62,15 @@ export default function CardSelection({ onClose, onChoose }: Proptypes) {
               </TableRow>
             </TableHead>
             {VALUES.map((value) => (
-              <TableRow>
+              <TableRow key={`card_selection_${value}`}>
                 <TableCell component="th" scope="row">
                   <strong>{value}</strong>
                 </TableCell>
                 {NIPES.map((nipe) => (
-                  <TableCell align="center">
+                  <TableCell
+                    align="center"
+                    key={`card_selection_${value}_${nipe}`}
+                  >
                     <Checkbox onClick={() => onChoose(value, nipe)} />
                   </TableCell>
                 ))}

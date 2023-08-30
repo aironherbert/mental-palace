@@ -1,5 +1,5 @@
 import styled from "@emotion/styled";
-import { Alert, Button, Icon, IconButton, Snackbar } from "@mui/material";
+import { Button, Icon, IconButton } from "@mui/material";
 import { useCallback, useState } from "react";
 import "./App.css";
 import Stopwatch from "./components/stopwatch";

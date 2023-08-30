@@ -6,6 +6,8 @@ import Stopwatch from "./components/stopwatch";
 import usePersistentState from "./helpers/use-persistent-state";
 import CardSelection from "./components/card-selection";
 import CustomizedSnackbars from "./components/alert";
+import Help from "./components/help";
+import { TIPS } from "./helpers/tips";
 export const NIPES = ["diamonds", "clubs", "hearts", "spades"];
 export const VALUES = [
   "A",
@@ -40,6 +42,8 @@ const Card = styled.div<{ wrong?: boolean }>`
 
   &:hover {
     transform: scale(1.1);
+
+    cursor: pointer;
 
     transition: transform 0.2s ease-in-out;
 
@@ -97,15 +101,31 @@ function GenerateCard({
   wrong: boolean;
   setSelected: (card: CardType) => void;
 }) {
+  const [tips, setTips] = useState<string[]>([]);
+
+  const getTips = useCallback(() => {
+    const card = TIPS.find((tip) => tip.nipe === nipe && tip.value === value);
+    setTips(card?.tips ?? []);
+  }, [nipe, value]);
+
   if (show) {
     return (
-      <Card>
-        <h1>{value}</h1>
-        {nipe === "diamonds" && <h1 style={{ color: "red" }}>♦</h1>}
-        {nipe === "clubs" && <h1>♣</h1>}
-        {nipe === "hearts" && <h1 style={{ color: "red" }}>♥</h1>}
-        {nipe === "spades" && <h1>♠</h1>}
-      </Card>
+      <div onClick={() => getTips()}>
+        <Card>
+          <h1>{value}</h1>
+          {tips.length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              {tips.map((tip) => (
+                <div key={`tip_${tip}`}>{tip}</div>
+              ))}
+            </div>
+          )}
+          {nipe === "diamonds" && <h1 style={{ color: "red" }}>♦</h1>}
+          {nipe === "clubs" && <h1>♣</h1>}
+          {nipe === "hearts" && <h1 style={{ color: "red" }}>♥</h1>}
+          {nipe === "spades" && <h1>♠</h1>}
+        </Card>
+      </div>
     );
   }
   return (
@@ -115,7 +135,7 @@ function GenerateCard({
         setSelected({ value, nipe });
       }}
     >
-      <Card wrong={wrong} style={{ cursor: "pointer" }}>
+      <Card wrong={wrong}>
         <h1>?</h1>
       </Card>
     </div>
@@ -141,6 +161,7 @@ export default function App() {
 
   const [code, setCode] = useState<string>("no-date");
   const [show, setShow] = useState<boolean>(false);
+  const [help, setHelp] = useState<boolean>(false);
 
   const save = useCallback(
     (cards?: CardType[]) => {
@@ -186,12 +207,12 @@ export default function App() {
       if (score) {
         setFeedback({
           severity: "success",
-          message: "Acertou!",
+          message: "Parabéns! Você acertou.",
         });
       } else {
         setFeedback({
           severity: "error",
-          message: "Errou!",
+          message: "Ops! Tente novamente.",
         });
       }
       setAttempts((prev) => {
@@ -239,6 +260,11 @@ export default function App() {
   );
   return (
     <div className="App">
+      <div style={{ position: "absolute", right: "1em", top: "1em" }}>
+        <IconButton onClick={() => setHelp(true)}>
+          <Icon style={{ color: "blue" }}>help</Icon>
+        </IconButton>
+      </div>
       <h1 style={{ margin: 0 }}>Gerador de Cartas Aleatórias</h1>
       <h4>Jogo de memória</h4>
       <div style={{ display: "flex", width: "100%" }}>
@@ -281,11 +307,6 @@ export default function App() {
                 </div>
               </>
             )}
-            {/* {!show && (
-              <Button variant="contained" color="secondary">
-                Tentar
-              </Button>
-            )} */}
           </div>
           <Stopwatch code={code} setShow={setShow} />
           <div
@@ -352,6 +373,7 @@ export default function App() {
           onClose={() => setFeedback(undefined)}
         />
       )}
+      {help && <Help onClose={() => setHelp(false)} />}
     </div>
   );
 }

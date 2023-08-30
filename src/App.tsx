@@ -1,11 +1,14 @@
 import styled from "@emotion/styled";
-import { Button, Icon, IconButton } from "@mui/material";
+import { Alert, Button, Icon, IconButton, Snackbar } from "@mui/material";
 import { useCallback, useState } from "react";
 import "./App.css";
 import Stopwatch from "./components/stopwatch";
 import usePersistentState from "./helpers/use-persistent-state";
-const NIPES = ["diamonds", "clubs", "hearts", "spades"];
-const VALUES = [
+import CardSelection from "./components/card-selection";
+import CustomizedSnackbars from "./components/alert";
+export const NIPES = ["diamonds", "clubs", "hearts", "spades"];
+export const VALUES = [
+  "A",
   "2",
   "3",
   "4",
@@ -18,10 +21,9 @@ const VALUES = [
   "J",
   "Q",
   "K",
-  "A",
 ];
 
-const Card = styled.div`
+const Card = styled.div<{ wrong?: boolean }>`
   width: 100px;
   height: 150px;
   border: 1px solid black;
@@ -33,7 +35,7 @@ const Card = styled.div`
   align-items: center;
   text-align: center;
 
-  background-color: white;
+  background-color: ${({ wrong }) => (wrong ? "#ff4c4c" : "white")};
   box-shadow: 0px 0px 5px 0px rgba(0, 0, 0, 0.75);
 
   &:hover {
@@ -84,15 +86,39 @@ const SaveCard = styled.div<{ active: boolean }>`
   }
 `;
 
-function GenerateCard({ nipe, value }: CardType) {
+function GenerateCard({
+  nipe,
+  value,
+  show,
+  wrong,
+  setSelected,
+}: CardType & {
+  show: boolean;
+  wrong: boolean;
+  setSelected: (card: CardType) => void;
+}) {
+  if (show) {
+    return (
+      <Card>
+        <h1>{value}</h1>
+        {nipe === "diamonds" && <h1 style={{ color: "red" }}>♦</h1>}
+        {nipe === "clubs" && <h1>♣</h1>}
+        {nipe === "hearts" && <h1 style={{ color: "red" }}>♥</h1>}
+        {nipe === "spades" && <h1>♠</h1>}
+      </Card>
+    );
+  }
   return (
-    <Card>
-      <h1>{value}</h1>
-      {nipe === "diamonds" && <h1 style={{ color: "red" }}>♦</h1>}
-      {nipe === "clubs" && <h1>♣</h1>}
-      {nipe === "hearts" && <h1 style={{ color: "red" }}>♥</h1>}
-      {nipe === "spades" && <h1>♠</h1>}
-    </Card>
+    <div
+      key={`${value}_${nipe}`}
+      onClick={() => {
+        setSelected({ value, nipe });
+      }}
+    >
+      <Card wrong={wrong} style={{ cursor: "pointer" }}>
+        <h1>?</h1>
+      </Card>
+    </div>
   );
 }
 
@@ -104,6 +130,14 @@ type T = Record<string, CardType[]>;
 export default function App() {
   const [cards, setCards] = useState<CardType[]>();
   const [savedCards, setSavedCards] = usePersistentState<T>("saved-cards", {});
+  const [selected, setSelected] = useState<CardType>();
+  const [feedback, setFeedback] = useState<{
+    severity: "success" | "info" | "warning" | "error";
+    message: string;
+  }>();
+  const [attempts, setAttempts] = usePersistentState<
+    Record<string, (CardType & { score: boolean })[]>
+  >("attempts", {});
 
   const [code, setCode] = useState<string>("no-date");
   const [show, setShow] = useState<boolean>(false);
@@ -146,6 +180,63 @@ export default function App() {
     [savedCards, setSavedCards]
   );
 
+  const attempt = useCallback(
+    (value: string, nipe: string) => {
+      const score = value === selected?.value && nipe === selected?.nipe;
+      if (score) {
+        setFeedback({
+          severity: "success",
+          message: "Acertou!",
+        });
+      } else {
+        setFeedback({
+          severity: "error",
+          message: "Errou!",
+        });
+      }
+      setAttempts((prev) => {
+        return {
+          ...prev,
+          [code]: [
+            ...(prev[code] ?? []),
+            {
+              nipe: selected?.nipe ?? "",
+              value: selected?.value ?? "",
+              score,
+            },
+          ],
+        };
+      });
+      setSelected(undefined);
+    },
+    [code, selected, setAttempts]
+  );
+
+  const isRight = useCallback(
+    (card: CardType) => {
+      return (
+        attempts[code]
+          ?.filter(
+            (attempt) =>
+              attempt.nipe === card.nipe && attempt.value === card.value
+          )
+          ?.some((attempt) => attempt.score) ?? false
+      );
+    },
+    [attempts, code]
+  );
+
+  const isWrong = useCallback(
+    (card: CardType) => {
+      return attempts[code]
+        ?.filter(
+          (attempt) =>
+            attempt.nipe === card.nipe && attempt.value === card.value
+        )
+        ?.some((attempt) => attempt.score === false);
+    },
+    [attempts, code]
+  );
   return (
     <div className="App">
       <h1 style={{ margin: 0 }}>Gerador de Cartas Aleatórias</h1>
@@ -177,10 +268,24 @@ export default function App() {
               Gerar
             </Button>
             {!show && (
+              <>
+                <div style={{ color: "green" }}>
+                  Acertos:{" "}
+                  {attempts[code]?.filter((attempt) => attempt.score).length ??
+                    0}
+                </div>
+                <div style={{ color: "red" }}>
+                  Erros:{" "}
+                  {attempts[code]?.filter((attempt) => !attempt.score).length ??
+                    0}
+                </div>
+              </>
+            )}
+            {/* {!show && (
               <Button variant="contained" color="secondary">
                 Tentar
               </Button>
-            )}
+            )} */}
           </div>
           <Stopwatch code={code} setShow={setShow} />
           <div
@@ -224,22 +329,29 @@ export default function App() {
         style={{ display: "flex", flexWrap: "wrap", justifyContent: "center" }}
       >
         {cards?.map((card) => (
-          <>
-            {show && (
-              <GenerateCard
-                key={`${card.value}_${card.nipe}`}
-                nipe={card.nipe}
-                value={card.value}
-              />
-            )}
-            {!show && (
-              <Card key={`${card.value}_${card.nipe}`}>
-                <h1>?</h1>
-              </Card>
-            )}
-          </>
+          <GenerateCard
+            key={`${card.value}_${card.nipe}`}
+            nipe={card.nipe}
+            value={card.value}
+            show={show || isRight(card)}
+            wrong={!show && isWrong(card)}
+            setSelected={setSelected}
+          />
         ))}
       </div>
+      {selected && (
+        <CardSelection
+          onChoose={(value, nipe) => attempt(value, nipe)}
+          onClose={() => setSelected(undefined)}
+        />
+      )}
+      {feedback && (
+        <CustomizedSnackbars
+          severity={feedback?.severity}
+          message={feedback?.message}
+          onClose={() => setFeedback(undefined)}
+        />
+      )}
     </div>
   );
 }

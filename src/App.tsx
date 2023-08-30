@@ -194,6 +194,7 @@ export default function App() {
 
   const remove = useCallback(
     (key: string) => {
+      setCards([]);
       const newSavedCards = { ...savedCards };
       delete newSavedCards[key];
       setSavedCards(newSavedCards);
@@ -334,8 +335,9 @@ export default function App() {
               >
                 <IconButton
                   className={"remove-button"}
-                  onClick={() => {
+                  onClick={(e) => {
                     remove(key);
+                    e.stopPropagation();
                   }}
                 >
                   <Icon>remove_circle</Icon>

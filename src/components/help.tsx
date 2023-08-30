@@ -51,7 +51,7 @@ export default function Help({ onClose }: Proptypes) {
             <li>A – T apenas</li>
             <li>2 – N ou NH</li>
             <li>3 – M</li>
-            <li>4 – RR apenas</li>
+            <li>4 – R apenas</li>
             <li>5 – L ou LH</li>
             <li>6 – X, CH, J ou G fraco</li>
             <li>7 – C forte ou G forte</li>
@@ -60,7 +60,7 @@ export default function Help({ onClose }: Proptypes) {
             <li>10 – Sons correspondentes ao 0 (S, Z, Ç, XC)</li>
             <li>J (Valete) – V</li>
             <li>Q (Dama) – D</li>
-            <li>K (Rei) – R</li>
+            <li>K (Rei) – RR</li>
           </ul>
         </p>
       </Box>

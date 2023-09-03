@@ -37,10 +37,10 @@ interface Proptypes {
 
 export default function Stopwatch({ code, setShow }: Proptypes) {
   const [dataTime, setDataTime] = usePersistentState<Record<string, Time>>(
-    code,
+    "data-time",
     {}
   );
-  const [time, setTime] = useState<Time>({ minutes: "59", seconds: "00" });
+  const [time, setTime] = useState<Time>({ minutes: "00", seconds: "00" });
   const [play, setPlay] = useState(false);
   const timer = useRef<NodeJS.Timeout>();
 
@@ -89,6 +89,10 @@ export default function Stopwatch({ code, setShow }: Proptypes) {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [time]);
+
+  if (code === "no-date") {
+    return <></>;
+  }
 
   return (
     <Card style={{ alignSelf: "end" }}>
